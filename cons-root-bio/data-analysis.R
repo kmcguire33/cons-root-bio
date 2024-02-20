@@ -1,0 +1,73 @@
+# ----
+# Conservation Biology Literature Review - Drivers of Biodiversity Loss
+# Script for analysing intial response data pulled from Google Sheets responses
+
+# Feb. 19, 2024
+# Author: Kelsey McGuire
+# kmcgu@mail.ubc.ca
+# ----
+## Packages
+# install.packages('googlesheets4')
+library(googlesheets4)
+library(tidyverse)
+
+## Analysis
+# Pull GoogleSheets Data
+sheets <- read_sheet("https://docs.google.com/spreadsheets/d/16R2s-iScRKt4aibJqVEiZEq_ONDJfySu0weoZiO94ic/edit#gid=1990801948")
+
+# Filter so that only journals containing drivers are shown
+iucn_drivers <- list('Habitat Loss/Fragmentation', 'General Human Activities*', 
+                     'Residential & Commercial Development (incl. tourism)', 'Agriculture & Aquaculture (incl. livestock, forestry)', 
+                     'Energy Production & Mining', 'Transportation & Service Corridors (roads, utilities, shipping, flights)',
+                     'Biological Resource Use (hunting, gathering)', 'Human Intrusion/Disturbance (Recreation, War, Work)', 
+                     'Modification of Natural Systems (fire management, dams, other habitat management)',
+                     'Invasive Species/Genes/Diseases', 'Pollution')
+ipbes_drivers <- list('Climate Change & Severe Weather', 'Demographic & Sociocultural', 'Economic & Technological',
+                      'Institutions & Governance', 'Conflicts & Epidemics')
+
+# Filter out missing data, and add columns for each driver
+filtered_drivers <- sheets[, 21] %>%
+  na.omit() %>%
+  cbind('Habitat Loss/Fragmentation' = NA, 
+        'General Human Activities*'  = NA, 
+        'Residential & Commercial Development (incl. tourism)' = NA, 
+        'Agriculture & Aquaculture (incl. livestock, forestry)' = NA, 
+        'Energy Production & Mining' = NA, 
+        'Transportation & Service Corridors (roads, utilities, shipping, flights)' = NA,
+        'Biological Resource Use (hunting, gathering)' = NA,
+        'Human Intrusion/Disturbance (Recreation, War, Work)' = NA, 
+        'Modification of Natural Systems (fire management, dams, other habitat management)' = NA,
+        'Invasive Species/Genes/Diseases' = NA, 
+        'Pollution' = NA,
+        'Climate Change & Severe Weather' = NA, 
+        'Demographic & Sociocultural' = NA, 
+        'Economic & Technological' = NA,
+        'Institutions & Governance' = NA, 
+        'Conflicts & Epidemics' = NA)
+
+# define the drivers from the column names
+drivers <- colnames(filtered_drivers[, -1])
+
+# begin for loop to run through the submission and compare to the listed drivers
+for (i in 1:length(filtered_drivers[,1])) {
+  submission <- filtered_drivers[,1][i]
+  for (x in 1:length(drivers)) {
+    if (grepl(drivers[x], submission, fixed = T) == TRUE) { # if there is a presence of the driver within the name run ...
+      filtered_drivers[i, drivers[x]] <- 1
+    } else {
+      filtered_drivers[i, drivers[x]] <- 0
+    }
+  }
+}
+
+# calculate the sum of drivers
+sum_of_drivers <- list()
+sum_of_drivers[1] <- NA # due to the first column holding the submission so no counts taken
+for (i in 2:length(colnames(filtered_drivers))) {
+  sum_of_drivers[i] <- sum(filtered_drivers[, i])
+}
+
+sum_of_drivers <- data.frame(sum_of_drivers)
+colnames(sum_of_drivers) <- colnames(filtered_drivers)
+
+filtered_drivers <- rbind(filtered_drivers, sum_of_drivers)
