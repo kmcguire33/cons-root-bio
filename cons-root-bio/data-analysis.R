@@ -51,6 +51,7 @@ drivers <- colnames(filtered_drivers[, -1])
 # begin for loop to run through the submission and compare to the listed drivers
 for (i in 1:length(filtered_drivers[,1])) {
   submission <- filtered_drivers[,1][i]
+  
   for (x in 1:length(drivers)) {
     if (grepl(drivers[x], submission, fixed = T) == TRUE) { # if there is a presence of the driver within the name run ...
       filtered_drivers[i, drivers[x]] <- 1
@@ -62,12 +63,33 @@ for (i in 1:length(filtered_drivers[,1])) {
 
 # calculate the sum of drivers
 sum_of_drivers <- list()
-sum_of_drivers[1] <- NA # due to the first column holding the submission so no counts taken
+sum_of_drivers[1] <- "Occurrence" 
 for (i in 2:length(colnames(filtered_drivers))) {
   sum_of_drivers[i] <- sum(filtered_drivers[, i])
 }
+
+filtered_drivers[1, ][1]
 
 sum_of_drivers <- data.frame(sum_of_drivers)
 colnames(sum_of_drivers) <- colnames(filtered_drivers)
 
 filtered_drivers <- rbind(filtered_drivers, sum_of_drivers)
+
+# transpose data for easier visualization
+new_filtered <- as.data.frame(t(filtered_drivers))
+colnames(new_filtered) <- new_filtered[1,] 
+new_filtered <- new_filtered[-1, ]
+
+# Plotting Occurrences of Drivers
+plot_drivers <- rownames(new_filtered)
+plot_occurrences <- as.numeric(new_filtered[,"Occurrence"])
+plot_data <- as.data.frame(cbind(plot_drivers, plot_occurrences))
+
+# ggplot
+plot_data %>%
+  mutate(plot_drivers = fct_reorder(plot_drivers, plot_occurrences)) %>%
+  ggplot( aes(x = plot_drivers, 
+              y = as.numeric(plot_occurrences))) + 
+  geom_bar(stat = "identity", color = "darkgreen", fill = "green4") +
+  labs(x = "Drivers", y = "Occurrences") +
+  coord_flip()
