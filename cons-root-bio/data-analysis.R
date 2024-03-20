@@ -88,23 +88,22 @@ plot_data %>%
   coord_flip()
 
 ## DRIVER DISTRIBUTIONS
-# drivers lists (not used but could be helpful in further analysis)
-# direct
 direct_drivers <- list('Habitat Loss/Fragmentation', 'General Human Activities*', 
                        'Residential & Commercial Development (incl. tourism)', 'Agriculture & Aquaculture (incl. livestock, forestry)', 
                        'Energy Production & Mining', 'Transportation & Service Corridors (roads, utilities, shipping, flights)',
                        'Biological Resource Use (hunting, gathering)', 'Human Intrusion/Disturbance (Recreation, War, Work)', 
                        'Modification of Natural Systems (fire management, dams, other habitat management)',
                        'Invasive Species/Genes/Diseases', 'Pollution')
-# indirect
+
 indirect_drivers <- list('Climate Change & Severe Weather', 'Demographic & Sociocultural', 'Economic & Technological',
                          'Institutions & Governance', 'Conflicts & Epidemics')
 
-# driver_analysis <- filtered_drivers[-nrow(filtered_drivers),]
+# slicing relevant data
 driver_analysis <- filtered_drivers[nrow(filtered_drivers), -1] %>%
   as.data.frame() %>%
   t() 
 
+# create loop to sort drivers
 driver_class <- list()
 for (i in 1:nrow(driver_analysis)) {
   for (x in 1:length(direct_drivers)) {
@@ -119,7 +118,6 @@ for (i in 1:nrow(driver_analysis)) {
     }
   }
 }
-
 
 # cleaning data for visualiaation
 driver_analysis <- cbind(rownames(driver_analysis), driver_analysis, driver_class) %>%
