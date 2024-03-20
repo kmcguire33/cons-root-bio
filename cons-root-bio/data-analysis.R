@@ -2,31 +2,23 @@
 # Conservation Biology Literature Review - Drivers of Biodiversity Loss
 # Script for analysing intial response data pulled from Google Sheets responses
 
-# Feb. 19, 2024
+# Feb. 19, 2024 (Last Edit: Mar. 20, 2024)
 # Author: Kelsey McGuire
 # kmcgu@mail.ubc.ca
 # ----
-## Packages
+
+## PACKAGES
 # install.packages('googlesheets4')
 library(googlesheets4)
 library(tidyverse)
 
-## Analysis
-# Pull GoogleSheets Data
-sheets <- read_sheet("https://docs.google.com/spreadsheets/d/16R2s-iScRKt4aibJqVEiZEq_ONDJfySu0weoZiO94ic/edit#gid=1990801948")
+## ANALYSIS
 
-# Filter so that only journals containing drivers are shown
-iucn_drivers <- list('Habitat Loss/Fragmentation', 'General Human Activities*', 
-                     'Residential & Commercial Development (incl. tourism)', 'Agriculture & Aquaculture (incl. livestock, forestry)', 
-                     'Energy Production & Mining', 'Transportation & Service Corridors (roads, utilities, shipping, flights)',
-                     'Biological Resource Use (hunting, gathering)', 'Human Intrusion/Disturbance (Recreation, War, Work)', 
-                     'Modification of Natural Systems (fire management, dams, other habitat management)',
-                     'Invasive Species/Genes/Diseases', 'Pollution')
-ipbes_drivers <- list('Climate Change & Severe Weather', 'Demographic & Sociocultural', 'Economic & Technological',
-                      'Institutions & Governance', 'Conflicts & Epidemics')
+# pull GoogleSheets Data
+cons_bio_responses <- read_sheet("https://docs.google.com/spreadsheets/d/16R2s-iScRKt4aibJqVEiZEq_ONDJfySu0weoZiO94ic/edit#gid=1990801948")
 
-# Filter out missing data, and add columns for each driver
-filtered_drivers <- sheets[, 21] %>%
+# filter out missing data, and add columns for each driver
+filtered_drivers <- cons_bio_responses[, 21] %>%
   na.omit() %>%
   cbind('Habitat Loss/Fragmentation' = NA, 
         'General Human Activities*'  = NA, 
@@ -45,6 +37,7 @@ filtered_drivers <- sheets[, 21] %>%
         'Institutions & Governance' = NA, 
         'Conflicts & Epidemics' = NA)
 
+## GENERAL DRIVER OCCURRENCE ANALYSIS
 # define the drivers from the column names
 drivers <- colnames(filtered_drivers[, -1])
 
@@ -80,7 +73,7 @@ new_filtered <- as.data.frame(t(filtered_drivers))
 colnames(new_filtered) <- new_filtered[1,] 
 new_filtered <- new_filtered[-1, ]
 
-# Plotting Occurrences of Drivers
+# plotting occurrences of drivers
 plot_drivers <- rownames(new_filtered)
 plot_occurrences <- as.numeric(new_filtered[,"Occurrence"])
 plot_data <- as.data.frame(cbind(plot_drivers, plot_occurrences))
@@ -93,3 +86,55 @@ plot_data %>%
   geom_bar(stat = "identity", color = "darkgreen", fill = "green4") +
   labs(x = "Drivers", y = "Occurrences") +
   coord_flip()
+
+## DRIVER DISTRIBUTIONS
+# drivers lists (not used but could be helpful in further analysis)
+# direct
+direct_drivers <- list('Habitat Loss/Fragmentation', 'General Human Activities*', 
+                       'Residential & Commercial Development (incl. tourism)', 'Agriculture & Aquaculture (incl. livestock, forestry)', 
+                       'Energy Production & Mining', 'Transportation & Service Corridors (roads, utilities, shipping, flights)',
+                       'Biological Resource Use (hunting, gathering)', 'Human Intrusion/Disturbance (Recreation, War, Work)', 
+                       'Modification of Natural Systems (fire management, dams, other habitat management)',
+                       'Invasive Species/Genes/Diseases', 'Pollution')
+# indirect
+indirect_drivers <- list('Climate Change & Severe Weather', 'Demographic & Sociocultural', 'Economic & Technological',
+                         'Institutions & Governance', 'Conflicts & Epidemics')
+
+# driver_analysis <- filtered_drivers[-nrow(filtered_drivers),]
+driver_analysis <- filtered_drivers[nrow(filtered_drivers), -1] %>%
+  as.data.frame() %>%
+  t() 
+
+driver_class <- list()
+for (i in 1:nrow(driver_analysis)) {
+  for (x in 1:length(direct_drivers)) {
+    if (grepl(direct_drivers[x], rownames(driver_analysis)[i], fixed = T) == TRUE) {
+      driver_class[i] <- 'Direct (IUCN)'
+    }
+  }
+  
+  for (z in 1:length(indirect_drivers)) {
+    if (grepl(indirect_drivers[z], rownames(driver_analysis)[i], fixed = T) == TRUE) {
+      driver_class[i] <- 'Indirect (IPBES)'
+    }
+  }
+}
+
+
+# cleaning data for visualiaation
+driver_analysis <- cbind(rownames(driver_analysis), driver_analysis, driver_class) %>%
+  as.data.frame()
+
+colnames(driver_analysis) <- c('drivers', 'occurrence', 'class')
+driver_analysis$occurrence <- as.numeric(driver_analysis$occurrence)
+driver_analysis$drivers <- as.character(driver_analysis$drivers)
+driver_analysis$class <- as.character(driver_analysis$class)
+
+# plotting
+ggplot(driver_analysis, aes(fill = drivers, 
+                            y = occurrence, x = class)) + 
+  geom_bar(position="stack", stat="identity", color = "ghostwhite") +
+  labs(x = "Driver Classification",
+       y = "Occurrence",
+       title = "Biodiversity Loss Driver Occurrences by IUCN/IPBES Class") +
+  guides(fill = guide_legend(title = "Biodiversity Loss Drivers"))
